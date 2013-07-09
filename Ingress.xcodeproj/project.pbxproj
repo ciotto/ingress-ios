@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0F8A05A9178C752F003DBEC0 /* Nanbo2.gpx in Resources */ = {isa = PBXBuildFile; fileRef = 0F8A05A6178C752F003DBEC0 /* Nanbo2.gpx */; };
+		0F8A05AA178C752F003DBEC0 /* Nanbo1.gpx in Resources */ = {isa = PBXBuildFile; fileRef = 0F8A05A7178C752F003DBEC0 /* Nanbo1.gpx */; };
+		0F8A05AB178C752F003DBEC0 /* Nanbo.gpx in Resources */ = {isa = PBXBuildFile; fileRef = 0F8A05A8178C752F003DBEC0 /* Nanbo.gpx */; };
 		52BF802B177903790027BE3C /* ResonatorView.m in Sources */ = {isa = PBXBuildFile; fileRef = 52BF802A177903790027BE3C /* ResonatorView.m */; };
 		FA008E19171D334700176C3D /* powerCube@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FA008E18171D334700176C3D /* powerCube@2x.png */; };
 		FA02F9D8173D54540016EE7F /* MediaWebViewViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FA02F9D7173D54540016EE7F /* MediaWebViewViewController.m */; };
@@ -308,6 +311,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0F8A05A6178C752F003DBEC0 /* Nanbo2.gpx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = Nanbo2.gpx; path = Locations/Nanbo2.gpx; sourceTree = "<group>"; };
+		0F8A05A7178C752F003DBEC0 /* Nanbo1.gpx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = Nanbo1.gpx; path = Locations/Nanbo1.gpx; sourceTree = "<group>"; };
+		0F8A05A8178C752F003DBEC0 /* Nanbo.gpx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = Nanbo.gpx; path = Locations/Nanbo.gpx; sourceTree = "<group>"; };
 		52BF8029177903790027BE3C /* ResonatorView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ResonatorView.h; sourceTree = "<group>"; };
 		52BF802A177903790027BE3C /* ResonatorView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ResonatorView.m; sourceTree = "<group>"; };
 		FA008E18171D334700176C3D /* powerCube@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "powerCube@2x.png"; sourceTree = "<group>"; };
@@ -1871,6 +1877,9 @@
 		FAEA582C169C7E7500E2F502 = {
 			isa = PBXGroup;
 			children = (
+				0F8A05A6178C752F003DBEC0 /* Nanbo2.gpx */,
+				0F8A05A7178C752F003DBEC0 /* Nanbo1.gpx */,
+				0F8A05A8178C752F003DBEC0 /* Nanbo.gpx */,
 				FAEA5841169C7E7500E2F502 /* Ingress */,
 				FAC37C46169DE2EB000F88AB /* Loading View Controller */,
 				FA54DEFA16A19BAE006A92E0 /* Intel */,
@@ -2171,6 +2180,9 @@
 				FAAF378317610D63009BD67C /* turret@2x.png in Resources */,
 				FA325D651780A82300FDC5A5 /* discovery_location@2x.png in Resources */,
 				FA6C96C4178B217E0082C7EC /* compass_ring@2x.png in Resources */,
+				0F8A05A9178C752F003DBEC0 /* Nanbo2.gpx in Resources */,
+				0F8A05AA178C752F003DBEC0 /* Nanbo1.gpx in Resources */,
+				0F8A05AB178C752F003DBEC0 /* Nanbo.gpx in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
