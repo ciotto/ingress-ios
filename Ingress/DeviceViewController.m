@@ -27,6 +27,8 @@
 	[super viewWillAppear:animated];
 
 	[[[GAI sharedInstance] defaultTracker] sendView:@"Device Screen"];
+
+	[self.tableView reloadData];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -40,309 +42,268 @@
 	UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
 	cell.textLabel.font = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:18];
     
-    switch (indexPath.row) {
-        case 4: {
-            if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleBackground]) {
-                cell.textLabel.text = @"Mute Background";
-            } else {
-                cell.textLabel.text = @"Unmute Background";
+	switch (indexPath.section) {
+		case 0:
+
+			switch (indexPath.row) {
+				case 0: {
+					cell.textLabel.text = [NSString stringWithFormat:@"iOS Ingress %@", [[NSBundle mainBundle] infoDictionary][@"CFBundleVersion"]];
+					break;
+				}
+				case 4: {
+					int numItems = [Item MR_countOfEntitiesWithPredicate:[NSPredicate predicateWithFormat:@"dropped = NO"]];
+					cell.textLabel.text = [NSString stringWithFormat:@"%d items in Inventory", numItems];
+					break;
+				}
 			}
-            break;
-        }
-        case 5: {
-            if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
-                cell.textLabel.text = @"Mute Effects";
-            } else {
-                cell.textLabel.text = @"Unmute Effects";
-            }
-            break;
-        }
-        case 6: {
-            if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleSpeech]) {
-                cell.textLabel.text = @"Mute Speech";
-            } else {
-                cell.textLabel.text = @"Unmute Speech";
-            }
-            break;
-        }
-		case 7: {
-			Player *player = [[API sharedInstance] playerForContext:[NSManagedObjectContext MR_contextForCurrentThread]];
-            if (player.shouldSendEmail) {
-                cell.textLabel.text = @"Disable Email Notifications";
-            } else {
-                cell.textLabel.text = @"Enable Email Notifications";
+
+			break;
+		case 1:
+
+			switch (indexPath.row) {
+				case 2: {
+					if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleBackground]) {
+						cell.textLabel.text = @"Mute Background";
+					} else {
+						cell.textLabel.text = @"Unmute Background";
+					}
+					break;
+				}
+				case 3: {
+					if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
+						cell.textLabel.text = @"Mute Effects";
+					} else {
+						cell.textLabel.text = @"Unmute Effects";
+					}
+					break;
+				}
+				case 4: {
+					if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleSpeech]) {
+						cell.textLabel.text = @"Mute Speech";
+					} else {
+						cell.textLabel.text = @"Unmute Speech";
+					}
+					break;
+				}
+				case 5: {
+					Player *player = [[API sharedInstance] playerForContext:[NSManagedObjectContext MR_contextForCurrentThread]];
+					if (player.shouldSendEmail) {
+						cell.textLabel.text = @"Disable Email Notifications";
+					} else {
+						cell.textLabel.text = @"Enable Email Notifications";
+					}
+					break;
+				}
+				case 6: {
+					if ([[NSUserDefaults standardUserDefaults] boolForKey:IGMapDayMode]) {
+						cell.textLabel.text = @"Switch map to night mode";
+					} else {
+						cell.textLabel.text = @"Switch map to day mode";
+					}
+					break;
+				}
+				case 7: {
+					if (![[NSUserDefaults standardUserDefaults] boolForKey:MilesOrKM]) {
+						cell.textLabel.text = @"Switch units to kilometers";
+					} else {
+						cell.textLabel.text = @"Switch units to miles";
+					}
+					break;
+				}
 			}
-            break;
-        }
-        case 8: {
-            if ([[NSUserDefaults standardUserDefaults] boolForKey:IGMapDayMode]) {
-                cell.textLabel.text = @"Switch map to night mode";
-            } else {
-                cell.textLabel.text = @"Switch map to day mode";
-            }
-            break;
-        }
-        case 9:
-        {
-            if (![[NSUserDefaults standardUserDefaults] boolForKey:MilesOrKM]) {
-                cell.textLabel.text = @"Switch units to kilometers";
-            } else {
-                cell.textLabel.text = @"Switch units to miles";
-            }
-            break;
-        }
-    }
-    
+
+			break;
+	}
+
     return cell;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+	
+	UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+	if (cell.selectionStyle == UITableViewCellSelectionStyleNone) {
+		return;
+	}
+
 	[tableView deselectRowAtIndexPath:indexPath animated:YES];
-    
+
     if ((indexPath.row == 5 && ![[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) || (indexPath.row != 5 && [[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects])) {
         [[SoundManager sharedManager] playSound:@"Sound/sfx_ui_success.aif"];
     }
 
-	switch (indexPath.row) {
-		case 0: {
+	switch (indexPath.section) {
+		case 0:
 
-			NSHTTPCookieStorage *storage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
-			for (NSHTTPCookie *cookie in [storage cookies]) {
-				[storage deleteCookie:cookie];
+			switch (indexPath.row) {
+				case 2:
+					[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"http://www.ios-ingress.com"]];
+					break;
+				case 3:
+					[[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=6HKVU78GCECL2&lc=US&item_name=iOS%20Ingress&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted"]];
+					break;
 			}
-			[[NSUserDefaults standardUserDefaults] synchronize];
-
-			[MagicalRecord cleanUp];
-			[[NSFileManager defaultManager] removeItemAtURL:[NSPersistentStore MR_urlForStoreName:@"Ingress.sqlite"] error:nil];
-			[MagicalRecord setupCoreDataStackWithAutoMigratingSqliteStoreNamed:@"Ingress.sqlite"];
-
-			[self dismissViewControllerAnimated:YES completion:nil];
 
 			break;
-		}
-		case 1: {
+		case 1:
 
-			[self performSegueWithIdentifier:@"ImagePickerSegue" sender:self];
+			switch (indexPath.row) {
+				case 0: {
 
-			break;
-		}
-		case 2: {
+					NSHTTPCookieStorage *storage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+					for (NSHTTPCookie *cookie in [storage cookies]) {
+						[storage deleteCookie:cookie];
+					}
+					[[NSUserDefaults standardUserDefaults] synchronize];
 
-			__block MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:self.view.window];
-			HUD.userInteractionEnabled = YES;
-			HUD.dimBackground = YES;
-			HUD.mode = MBProgressHUDModeIndeterminate;
-			HUD.labelFont = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:16];
-			HUD.labelText = @"Loading inventory...";
-			[self.view.window addSubview:HUD];
-			[HUD show:YES];
+					[MagicalRecord cleanUp];
+					[[NSFileManager defaultManager] removeItemAtURL:[NSPersistentStore MR_urlForStoreName:@"Ingress.sqlite"] error:nil];
+					[MagicalRecord setupCoreDataStackWithAutoMigratingSqliteStoreNamed:@"Ingress.sqlite"];
 
-			[[API sharedInstance] getInventoryWithCompletionHandler:^{
-				[HUD hide:YES];
-			}];
+					[self dismissViewControllerAnimated:YES completion:nil];
 
-			break;
-		}
-
-		case 3: {
-
-			[MagicalRecord cleanUp];
-			[[NSFileManager defaultManager] removeItemAtURL:[NSPersistentStore MR_urlForStoreName:@"Ingress.sqlite"] error:nil];
-			[MagicalRecord setupCoreDataStackWithAutoMigratingSqliteStoreNamed:@"Ingress.sqlite"];
-			
-            break;
-		}
-
-        case 4: {
-
-			BOOL background = [[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleBackground];
-			UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
-			if (background) {
-                [[SoundManager sharedManager] stopMusic:NO];
-				cell.textLabel.text = @"Unmute Background";
-                [[NSUserDefaults standardUserDefaults] setBool:NO forKey:DeviceSoundToggleBackground];
-			} else {
-				cell.textLabel.text = @"Mute Background";
-                [[NSUserDefaults standardUserDefaults] setBool:YES forKey:DeviceSoundToggleBackground];
-                [[SoundManager sharedManager] playMusic:@"Sound/sfx_ambient_scanner_base.aif" looping:YES fadeIn:NO];
-			}
-            [[NSUserDefaults standardUserDefaults] synchronize];
-            
-            break;
-        }
-            
-        case 5: {
-            
-			BOOL effects = [[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects];
-			UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
-			if (effects) {
-				cell.textLabel.text = @"Unmute Effects";
-                [[NSUserDefaults standardUserDefaults] setBool:NO forKey:DeviceSoundToggleEffects];
-			} else {
-				cell.textLabel.text = @"Mute Effects";
-                [[NSUserDefaults standardUserDefaults] setBool:YES forKey:DeviceSoundToggleEffects];
-			}
-            [[NSUserDefaults standardUserDefaults] synchronize];
-            
-            break;
-        }
-            
-        case 6: {
-            
-			BOOL speech = [[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleSpeech];
-			UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
-			if (speech) {
-				cell.textLabel.text = @"Unmute Speech";
-                [[NSUserDefaults standardUserDefaults] setBool:NO forKey:DeviceSoundToggleSpeech];
-			} else {
-				cell.textLabel.text = @"Mute Speech";
-                [[NSUserDefaults standardUserDefaults] setBool:YES forKey:DeviceSoundToggleSpeech];
-                [[API sharedInstance] playSound:@"SPEECH_ACTIVATED"];
-			}
-            [[NSUserDefaults standardUserDefaults] synchronize];
-            
-            break;
-        }
-        
-		case 7: {
-
-            UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
-			Player *player = [[API sharedInstance] playerForContext:[NSManagedObjectContext MR_contextForCurrentThread]];
-			if (player.shouldSendEmail) {
-				cell.textLabel.text = @"Enable Email Notifications";
-			} else {
-				cell.textLabel.text = @"Disable Email Notifications";
-			}
-
-			[MagicalRecord saveWithBlock:^(NSManagedObjectContext *localContext) {
-				Player *player = [[API sharedInstance] playerForContext:localContext];
-				player.shouldSendEmail = !player.shouldSendEmail;
-			} completion:^(BOOL success, NSError *error) {
-				[[API sharedInstance] setNotificationSettingsWithCompletionHandler:nil];
-			}];
-
-            break;
-		}
-            
-        case 8: {
-            BOOL newDayModeValue = ! [[NSUserDefaults standardUserDefaults] boolForKey:IGMapDayMode];
-            
-            [[NSUserDefaults standardUserDefaults] setBool:newDayModeValue forKey:IGMapDayMode];
-            [[NSUserDefaults standardUserDefaults] synchronize];
-            
-            UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
-            if (newDayModeValue) {
-                cell.textLabel.text = @"Switch map to night mode";
-            } else {
-                cell.textLabel.text = @"Switch map to day mode";
-            }
-            
-            break;
-        }
-        case 9:
-        {
-           
-            BOOL newMilesorKMValue = ! [[NSUserDefaults standardUserDefaults] boolForKey:MilesOrKM];
-            [[NSUserDefaults standardUserDefaults] setBool:newMilesorKMValue forKey:MilesOrKM];
-            [[NSUserDefaults standardUserDefaults] synchronize];
-            
-            UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
-            if (!newMilesorKMValue) {
-                cell.textLabel.text = @"Switch units to kilometers";
-            } else {
-                cell.textLabel.text = @"Switch units to miles";
-            }
-            break;
-        }
-        
-	}
-	
-}
-
-#pragma mark - UIImagePickerControllerDelegate
-
-- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info {
-
-	imageData = nil;
-	imageLocation = nil;
-
-	NSString *mediaType = [info objectForKey:UIImagePickerControllerMediaType];
-	if ([mediaType isEqualToString:(NSString*)kUTTypeImage]) {
-		NSURL *url = [info objectForKey:UIImagePickerControllerReferenceURL];
-		if (url) {
-			[[ALAssetsLibrary new] assetForURL:url resultBlock:^(ALAsset *asset) {
-				CLLocation *location = [asset valueForProperty:ALAssetPropertyLocation];
-				if (location) {
-					imageLocation = [NSString stringWithFormat:@"lat=%g\nlng=%g\n", location.coordinate.latitude, location.coordinate.longitude];
-					imageData = info[UIImagePickerControllerOriginalImage];
-					NSLog(@"imageData: %@", imageData);
+					break;
 				}
-			} failureBlock:nil];
-		}
+                    
+                case 1: {
+                    
+                    Player *player = [[API sharedInstance] playerForContext:[NSManagedObjectContext MR_contextForCurrentThread]];
+                    NSString *nickname = [player.nickname copy];
+                    
+					[MagicalRecord cleanUp];
+					[[NSFileManager defaultManager] removeItemAtURL:[NSPersistentStore MR_urlForStoreName:@"Ingress.sqlite"] error:nil];
+					[MagicalRecord setupCoreDataStackWithAutoMigratingSqliteStoreNamed:@"Ingress.sqlite"];
+                    
+                    player = [[API sharedInstance] playerForContext:[NSManagedObjectContext MR_contextForCurrentThread]];
+                    player.nickname = nickname;
+                    
+                    nickname = nil;
+                    
+					MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:self.view.window];
+					HUD.removeFromSuperViewOnHide = YES;
+					HUD.userInteractionEnabled = YES;
+					HUD.dimBackground = YES;
+					HUD.mode = MBProgressHUDModeIndeterminate;
+					HUD.labelFont = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:16];
+					HUD.labelText = @"Loading inventory...";
+					[self.view.window addSubview:HUD];
+					[HUD show:YES];
+
+					[[API sharedInstance] getInventoryWithCompletionHandler:^{
+                        [[NSNotificationCenter defaultCenter] postNotificationName:@"DBUpdatedNotification" object:nil];
+						[HUD hide:YES];
+					}];
+
+					break;
+                    
+                }
+
+				case 2: {
+
+					BOOL background = [[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleBackground];
+					UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
+					if (background) {
+						[[SoundManager sharedManager] stopMusic:NO];
+						cell.textLabel.text = @"Unmute Background";
+						[[NSUserDefaults standardUserDefaults] setBool:NO forKey:DeviceSoundToggleBackground];
+					} else {
+						cell.textLabel.text = @"Mute Background";
+						[[NSUserDefaults standardUserDefaults] setBool:YES forKey:DeviceSoundToggleBackground];
+						[[SoundManager sharedManager] playMusic:@"Sound/sfx_ambient_scanner_base.aif" looping:YES fadeIn:NO];
+					}
+					[[NSUserDefaults standardUserDefaults] synchronize];
+
+					break;
+				}
+
+				case 3: {
+
+					BOOL effects = [[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects];
+					UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
+					if (effects) {
+						cell.textLabel.text = @"Unmute Effects";
+						[[NSUserDefaults standardUserDefaults] setBool:NO forKey:DeviceSoundToggleEffects];
+					} else {
+						cell.textLabel.text = @"Mute Effects";
+						[[NSUserDefaults standardUserDefaults] setBool:YES forKey:DeviceSoundToggleEffects];
+					}
+					[[NSUserDefaults standardUserDefaults] synchronize];
+
+					break;
+				}
+
+				case 4: {
+
+					BOOL speech = [[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleSpeech];
+					UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
+					if (speech) {
+						cell.textLabel.text = @"Unmute Speech";
+						[[NSUserDefaults standardUserDefaults] setBool:NO forKey:DeviceSoundToggleSpeech];
+					} else {
+						cell.textLabel.text = @"Mute Speech";
+						[[NSUserDefaults standardUserDefaults] setBool:YES forKey:DeviceSoundToggleSpeech];
+						[[API sharedInstance] playSound:@"SPEECH_ACTIVATED"];
+					}
+					[[NSUserDefaults standardUserDefaults] synchronize];
+
+					break;
+				}
+
+				case 5: {
+
+					UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
+					Player *player = [[API sharedInstance] playerForContext:[NSManagedObjectContext MR_contextForCurrentThread]];
+					if (player.shouldSendEmail) {
+						cell.textLabel.text = @"Enable Email Notifications";
+					} else {
+						cell.textLabel.text = @"Disable Email Notifications";
+					}
+
+					[MagicalRecord saveWithBlock:^(NSManagedObjectContext *localContext) {
+						Player *player = [[API sharedInstance] playerForContext:localContext];
+						player.shouldSendEmail = !player.shouldSendEmail;
+					} completion:^(BOOL success, NSError *error) {
+						[[API sharedInstance] setNotificationSettingsWithCompletionHandler:nil];
+					}];
+
+					break;
+				}
+
+				case 6: {
+					BOOL newDayModeValue = ! [[NSUserDefaults standardUserDefaults] boolForKey:IGMapDayMode];
+
+					[[NSUserDefaults standardUserDefaults] setBool:newDayModeValue forKey:IGMapDayMode];
+					[[NSUserDefaults standardUserDefaults] synchronize];
+
+					UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
+					if (newDayModeValue) {
+						cell.textLabel.text = @"Switch map to night mode";
+					} else {
+						cell.textLabel.text = @"Switch map to day mode";
+					}
+
+					break;
+				}
+				case 7:
+				{
+
+					BOOL newMilesorKMValue = ! [[NSUserDefaults standardUserDefaults] boolForKey:MilesOrKM];
+					[[NSUserDefaults standardUserDefaults] setBool:newMilesorKMValue forKey:MilesOrKM];
+					[[NSUserDefaults standardUserDefaults] synchronize];
+
+					UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
+					if (!newMilesorKMValue) {
+						cell.textLabel.text = @"Switch units to kilometers";
+					} else {
+						cell.textLabel.text = @"Switch units to miles";
+					}
+					break;
+				}
+
+			}
+
+			break;
 	}
 
-	[picker dismissViewControllerAnimated:YES completion:^{
-		if (imageData) {
-			NSLog(@"imageData: %@", imageData);
-			UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Enter title for portal" message:nil delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
-			alertView.alertViewStyle = UIAlertViewStylePlainTextInput;
-			[alertView textFieldAtIndex:0].placeholder = @"Enter portal title";
-			[alertView show];
-		} else {
-			UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Error getting photo" message:nil delegate:self cancelButtonTitle:@"Dismiss" otherButtonTitles:nil];
-			[alertView show];
-		}
-	}];
-
-}
-
-#pragma mark - UIAlertViewDelegate
-
-- (BOOL)alertViewShouldEnableFirstOtherButton:(UIAlertView *)alertView {
-	return ([alertView textFieldAtIndex:0].text.length > 0);
-}
-
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-	if (buttonIndex == 1) {
-		if ([MFMailComposeViewController canSendMail]) {
-
-			[[UINavigationBar appearance] setTitleTextAttributes:@{UITextAttributeFont: [UIFont boldSystemFontOfSize:18]}];
-			[[UIBarButtonItem appearance] setTitleTextAttributes:@{UITextAttributeFont: [UIFont boldSystemFontOfSize:12]} forState:UIControlStateNormal];
-
-			MFMailComposeViewController *mailVC = [MFMailComposeViewController new];
-			[mailVC setMailComposeDelegate:self];
-			[mailVC setToRecipients:@[@"super-ops@google.com"]];
-			[mailVC setSubject:[alertView textFieldAtIndex:0].text];
-			[mailVC setMessageBody:imageLocation isHTML:NO];
-			[mailVC addAttachmentData:UIImageJPEGRepresentation(imageData, .75) mimeType:@"image/jpg" fileName:@"portal_image.jpg"];
-			[self presentViewController:mailVC animated:YES completion:^{
-				
-				[[UINavigationBar appearance] setTitleTextAttributes:@{UITextAttributeFont: [UIFont fontWithName:@"Coda-Regular" size:16]}];
-				[[UIBarButtonItem appearance] setTitleTextAttributes:@{UITextAttributeFont: [UIFont fontWithName:@"Coda-Regular" size:10]} forState:UIControlStateNormal];
-				imageData = nil;
-				imageLocation = nil;
-				
-			}];
-		} else {
-			UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"Error while sending mail" message:nil delegate:self cancelButtonTitle:@"Dismiss" otherButtonTitles:nil];
-			[alertView show];
-		}
-	}
-}
-
-#pragma mark - MFMailComposeViewControllerDelegate
-
-- (void)mailComposeController:(MFMailComposeViewController *)controller didFinishWithResult:(MFMailComposeResult)result error:(NSError *)error {
-	[controller dismissViewControllerAnimated:YES completion:nil];
-}
-
-#pragma mark - Storyboard
-
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-	if ([segue.identifier isEqualToString:@"ImagePickerSegue"]) {
-		UIImagePickerController *vc = (UIImagePickerController *)segue.destinationViewController;
-		vc.delegate = self;
-	}
 }
 
 @end

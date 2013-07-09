@@ -53,6 +53,8 @@
 
 @property (nonatomic, strong) id<TTSlidingPagesDataSource> dataSource;
 
+@property (nonatomic, strong) id<UIScrollViewDelegate> scrollViewDelegate;
+
 /** @property titleScrollerHidden
  *  @brief Whether the title scroller bar is hidden or not.
  *  Whether the title scroller bar is hidden or not. Set this to YES if you only want the pages, and don't want the titles at the top of the page. For now even if this is set to YES you will still need to implement the `-(TTSlidingPageTitle *)titleForSlidingPagesViewController:(TTScrollSlidingPagesController *)source atIndex:(int)index` method in your datasource class, but you can just return nil for everything. Default is NO.  **/
@@ -68,6 +70,10 @@
  *   The width of each individual item in the top scroller. The wider it is, the less of the previous and next items you'll see, the narrower it is the more of the previous and next items you'll see but the more likely you won't have enough width for your title! Default if not set is 150px  **/
 @property (nonatomic) int titleScrollerItemWidth;
 
+/**  @property labelsOffset
+ *   @brief Y offset of labels in header. Default if not set is 20px.  **/
+@property (nonatomic) int labelsOffset;
+
 /**  @property titleScrollerBackgroundColour
  *   @brief The background colour of the top scroller
  *   The background colour of the top scroller. If you want it to be a texture image, you can use [UIColor colorWithPatternImage]. If not set, the default is a black diamonds pattern (credit: from http://subtlepatterns.com/ as long as you copy the diagmonds.png files within the Images folder in the same folder as this source). **/
@@ -78,10 +84,20 @@
  *   The colour of the text in the top scroller. If not set, the default will be white. **/
 @property (nonatomic, strong) UIColor *titleScrollerTextColour;
 
+/**  @property contentScrollerBackgroundColour
+ *   @brief The background colour of the bottom scroller
+ *   The background colour of the bottom scroller. If you want it to be a texture image, you can use [UIColor colorWithPatternImage]. If not set, the default is a transparent. **/
+@property (nonatomic, strong) UIColor *contentScrollerBackgroundColour;
+
 /**  @property disableTopScrollerShadow
  *   @brief Disables the shadow effect on the top header scroller
  *   If set to YES the shadow effect on the top header scroller will be disabled. Default is NO. **/
 @property (nonatomic) BOOL disableTitleScrollerShadow;
+
+/**  @property disableTriangle
+ *   @brief Disables the triangle in the top header scroller
+ *   If set to YES the triangle in the top header scroller will be disabled. Default is NO. **/
+@property (nonatomic) BOOL disableTriangle;
 
 /**  @property disableUIPageControl
  *   @brief Disables the UIPageControl (the page dots) at the top of the screen

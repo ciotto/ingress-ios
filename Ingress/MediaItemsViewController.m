@@ -18,10 +18,9 @@
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
-	if (![Utilities isOS7]) {
-		self.tableView.contentInset = UIEdgeInsetsMake(64, 0, 0, 0);
-		self.tableView.scrollIndicatorInsets = UIEdgeInsetsMake(64, 0, 0, 0);
-	}
+    self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 32, 0);
+    self.tableView.scrollIndicatorInsets = self.tableView.contentInset;
+
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -144,58 +143,92 @@
 	
 }
 
-- (NSString *)tableView:(UITableView *)tableView titleForDeleteConfirmationButtonForRowAtIndexPath:(NSIndexPath *)indexPath {
-	return @"Drop";
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+	[tableView deselectRowAtIndexPath:indexPath animated:YES];
+
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
+        [[SoundManager sharedManager] playSound:@"Sound/sfx_ui_success.aif"];
+    }
+	
+	currentMedia = [self.fetchedResultsController objectAtIndexPath:indexPath];
+
+	UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Drop" otherButtonTitles:@"Recycle", @"View", nil];
+	actionSheet.tag = 1;
+	[actionSheet showInView:self.view.window];
+
 }
 
-- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
-	if (editingStyle == UITableViewCellEditingStyleDelete) {
-		
-		Media *media = [self.fetchedResultsController objectAtIndexPath:indexPath];
-		
-		__block MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+#pragma mark - UIActionSheetDelegate
+
+- (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
+        [[SoundManager sharedManager] playSound:@"Sound/sfx_ui_success.aif"];
+    }
+	if (actionSheet.tag == 1 && buttonIndex == 0) {
+
+		MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+		HUD.removeFromSuperViewOnHide = YES;
 		HUD.userInteractionEnabled = YES;
 		HUD.mode = MBProgressHUDModeIndeterminate;
 		HUD.dimBackground = YES;
 		HUD.labelFont = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:16];
-		HUD.labelText = @"Dropping Media...";
+		HUD.labelText = @"Dropping Item...";
 		[[AppDelegate instance].window addSubview:HUD];
 		[HUD show:YES];
-        
         if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
             [[API sharedInstance] playSound:@"SFX_DROP_RESOURCE"];
         }
-        
-		[[API sharedInstance] dropItemWithGuid:media.guid completionHandler:^(void) {
+
+		[[API sharedInstance] dropItemWithGuid:currentMedia.guid completionHandler:^(void) {
 			[HUD hide:YES];
+
+			[self.tableView reloadData];
 		}];
-		
-	}
-}
 
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-	[tableView deselectRowAtIndexPath:indexPath animated:YES];
-	
-	currentMedia = [self.fetchedResultsController objectAtIndexPath:indexPath];
+	} else if (actionSheet.tag == 1 && buttonIndex == 1) {
 
-	if ([currentMedia.mediaURL.host isEqualToString:@"www.youtube.com"]) {
-		NSString *videoID = [currentMedia.url componentsSeparatedByString:@"v="][1];
-		NSRange search = [videoID rangeOfString:@"&"];
-		if (search.location != NSNotFound) {
-			videoID = [videoID substringToIndex:search.location];
+		MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+		HUD.removeFromSuperViewOnHide = YES;
+		HUD.userInteractionEnabled = YES;
+		HUD.mode = MBProgressHUDModeIndeterminate;
+		HUD.dimBackground = YES;
+		HUD.labelFont = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:16];
+		HUD.labelText = @"Recycling Item...";
+		[[AppDelegate instance].window addSubview:HUD];
+		[HUD show:YES];
+
+        if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
+            [[SoundManager sharedManager] playSound:[NSString stringWithFormat:@"Sound/sfx_recycle_%@.aif", arc4random_uniform(2) ? @"a" : @"b"]];
+        }
+
+		[[API sharedInstance] recycleItem:currentMedia completionHandler:^{
+			[HUD hide:YES];
+
+			[self.tableView reloadData];
+		}];
+
+	} else if (actionSheet.tag == 1 && buttonIndex == 2) {
+
+		if ([currentMedia.mediaURL.host isEqualToString:@"www.youtube.com"]) {
+			NSString *videoID = [currentMedia.url componentsSeparatedByString:@"v="][1];
+			NSRange search = [videoID rangeOfString:@"&"];
+			if (search.location != NSNotFound) {
+				videoID = [videoID substringToIndex:search.location];
+			}
+			XCDYouTubeVideoPlayerViewController *videoPlayerViewController = [[XCDYouTubeVideoPlayerViewController alloc] initWithVideoIdentifier:videoID];
+			[self presentMoviePlayerViewControllerAnimated:videoPlayerViewController];
+			[[SoundManager sharedManager] stopMusic:YES];
+		} else if ([currentMedia.mediaURL.lastPathComponent.pathExtension isEqualToString:@"mp3"]) {
+			MPMoviePlayerViewController *audioPlayerViewController = [[MPMoviePlayerViewController alloc] initWithContentURL:currentMedia.mediaURL];
+			[self presentMoviePlayerViewControllerAnimated:audioPlayerViewController];
+			[[SoundManager sharedManager] stopMusic:YES];
+		} else {
+			[self performSegueWithIdentifier:@"MediaWebViewSegue" sender:self];
 		}
-		XCDYouTubeVideoPlayerViewController *videoPlayerViewController = [[XCDYouTubeVideoPlayerViewController alloc] initWithVideoIdentifier:videoID];
-		[self presentMoviePlayerViewControllerAnimated:videoPlayerViewController];
-		[[SoundManager sharedManager] stopMusic:YES];
-	} else if ([currentMedia.mediaURL.lastPathComponent.pathExtension isEqualToString:@"mp3"]) {
-		MPMoviePlayerViewController *audioPlayerViewController = [[MPMoviePlayerViewController alloc] initWithContentURL:currentMedia.mediaURL];
-		[self presentMoviePlayerViewControllerAnimated:audioPlayerViewController];
-		[[SoundManager sharedManager] stopMusic:YES];
-	} else {
-		[self performSegueWithIdentifier:@"MediaWebViewSegue" sender:self];
-	}
 
+	}
 }
+
 
 #pragma mark - Storyboard
 

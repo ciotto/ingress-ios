@@ -21,24 +21,17 @@
 	dateFormatter = [NSDateFormatter new];
 	[dateFormatter setDateStyle:NSDateFormatterShortStyle];
 	[dateFormatter setTimeStyle:NSDateFormatterShortStyle];
-	
-	self.factionOnly = NO;
 
-	if (![Utilities isOS7]) {
-		self.tableView.contentInset = UIEdgeInsetsMake(64, 0, 0, 0);
-		self.tableView.scrollIndicatorInsets = UIEdgeInsetsMake(64, 0, 0, 0);
+//	if (![Utilities isOS7]) {
+//		self.refreshControl = [UIRefreshControl new];
+//		[self.refreshControl addTarget:self action:@selector(refresh) forControlEvents:UIControlEventValueChanged];
+//	}
 
-		self.refreshControl = [UIRefreshControl new];
-		[self.refreshControl addTarget:self action:@selector(refresh) forControlEvents:UIControlEventValueChanged];
-	}
-	
 }
 
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
 
-	[Plext MR_truncateAll];
-	[self refresh];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -53,21 +46,30 @@
 }
 
 - (void)refresh {
-	[self.refreshControl beginRefreshing];
-	[self.tableView scrollRectToVisible:CGRectMake(0, 0, 1, 1) animated:YES];
+//	[self.refreshControl beginRefreshing];
+    
+    NSIndexPath *scrollIndexPath = [NSIndexPath indexPathForRow:([self.tableView numberOfRowsInSection:([self.tableView numberOfSections] - 1)] - 1) inSection:([self.tableView numberOfSections] - 1)];
+    if (scrollIndexPath.row > -1) {
+        [self.tableView scrollToRowAtIndexPath:scrollIndexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+    }
+
+//	[Plext MR_deleteAllMatchingPredicate:[NSPredicate predicateWithFormat:@"factionOnly == %d", self.factionOnly]];
 
 	[[API sharedInstance] loadCommunicationForFactionOnly:self.factionOnly completionHandler:^{
-		[self.refreshControl endRefreshing];
+//		[self.refreshControl endRefreshing];
 
 		self.fetchedResultsController.fetchRequest.predicate = [NSPredicate predicateWithFormat:@"factionOnly == %d", self.factionOnly];
 		[Plext MR_performFetch:self.fetchedResultsController];
+        
+        NSIndexPath *scrollIndexPath = [NSIndexPath indexPathForRow:([self.tableView numberOfRowsInSection:([self.tableView numberOfSections] - 1)] - 1) inSection:([self.tableView numberOfSections] - 1)];
+        if (scrollIndexPath.row > -1) {
+            [self.tableView scrollToRowAtIndexPath:scrollIndexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+        }
 	}];
 }
 
 - (void)setFactionOnly:(BOOL)factionOnly {
 	if (factionOnly == _factionOnly) return;
-	
-	[Plext MR_truncateAll];
 	_factionOnly = factionOnly;
 	[self refresh];
 }
@@ -76,7 +78,7 @@
 
 - (NSFetchedResultsController *)fetchedResultsController {
 	if (!_fetchedResultsController) {
-		_fetchedResultsController = [Plext MR_fetchAllSortedBy:@"date" ascending:NO withPredicate:[NSPredicate predicateWithFormat:@"factionOnly == %d", self.factionOnly] groupBy:nil delegate:self];
+		_fetchedResultsController = [Plext MR_fetchAllSortedBy:@"date" ascending:YES withPredicate:[NSPredicate predicateWithFormat:@"factionOnly == %d", self.factionOnly] groupBy:nil delegate:self];
 	}
 	return _fetchedResultsController;
 }
@@ -101,11 +103,11 @@
 	Plext *plext = [self.fetchedResultsController objectAtIndexPath:indexPath];
 
 	CGFloat width = tableView.frame.size.width;
-	width -= 74;
+	width -= 76;
 	
 	CGRect rect = [plext.message boundingRectWithSize:CGSizeMake(width, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin|NSStringDrawingTruncatesLastVisibleLine context:NULL];
 	
-	return rect.size.height;
+	return rect.size.height+2;
 	
 }
 
@@ -128,7 +130,7 @@
 	User *sender = plext.sender;
 
 	if (sender && ![sender.guid isEqualToString:player.guid]) {
-		CommViewController *commVC = (CommViewController *)self.parentViewController;
+		CommViewController *commVC = (CommViewController *)self.parentViewController.parentViewController;
 		[commVC mentionUser:plext.sender];
 	}
 }

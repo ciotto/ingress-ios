@@ -79,11 +79,11 @@
 	////////
 
 	jsonDict = [@{
-				@"nemesisSoftwareVersion": @"2013-06-07T16:49:41Z 63e36378f5e8 opt",
+				@"nemesisSoftwareVersion": @"2013-06-28T23:28:27Z 760a7a8ffc90 opt",
 				@"deviceSoftwareVersion": @"4.1.1",
 	} mutableCopy];
 
-	versionString = @"v1.28.1";
+	versionString = @"v1.30.2";
 	
 }
 
@@ -198,8 +198,38 @@
 			NSString *jsonString = [webView stringByEvaluatingJavaScriptFromString:@"document.body.innerText"];
 			[[API sharedInstance] processHandshakeData:jsonString completionHandler:^(NSString *errorStr) {
 				if (!errorStr) {
+                    
+                    [MagicalRecord saveWithBlock:^(NSManagedObjectContext *localContext) {
+                        
+                        NSAttributedString *atrstr = [[NSAttributedString alloc] initWithString:@"Ingress" attributes:[Utilities attributesWithShadow:NO size:CHAT_FONT_SIZE color:[UIColor colorWithRed:226./255. green:179./255. blue:76./255. alpha:1.0]]];
+                        
+                        Plext *plext = [Plext MR_createInContext:localContext];
+                        plext.guid = nil;
+                        plext.message = atrstr;
+                        plext.factionOnly = NO;
+                        plext.date = [[NSDate date] timeIntervalSinceReferenceDate];
+                        plext.mentionsYou = nil;
+                        plext.sender = nil;
+                        
+                        // --------------------
+                        
+                        Player *player = [[API sharedInstance] playerForContext:localContext];
+                        NSMutableAttributedString *atrstr2 = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"Agent ID Confirmed. Welcome %@", player.nickname] attributes:[Utilities attributesWithShadow:NO size:CHAT_FONT_SIZE color:[UIColor colorWithRed:226./255. green:179./255. blue:76./255. alpha:1.0]]];
+                        [atrstr2 setAttributes:[Utilities attributesWithShadow:NO size:CHAT_FONT_SIZE color:[Utilities colorForFaction:player.team]] range:NSMakeRange(atrstr2.length-player.nickname.length, player.nickname.length)];
+                        
+                        plext = [Plext MR_createInContext:localContext];
+                        plext.guid = nil;
+                        plext.message = atrstr2;
+                        plext.factionOnly = NO;
+                        plext.date = [[NSDate date] timeIntervalSinceReferenceDate];
+                        plext.mentionsYou = nil;
+                        plext.sender = nil;
+                        
+                    }];
+                    
 					[[SoundManager sharedManager] stopMusic:YES];
 					[self performSegueWithIdentifier:@"LoadingCompletedSegue" sender:self];
+                    
 				} else {
 					
 					if ([errorStr isEqualToString:@"USER_REQUIRES_ACTIVATION"]) {
@@ -540,56 +570,12 @@
 
 }
 
-#pragma mark - UITabBarControllerDelegate
-
-- (void)tabBarController:(UITabBarController *)theTabBarController didSelectViewController:(UIViewController *)viewController {
-//	[UIView animateWithDuration:.2 animations:^{
-//		CGRect frame = _tabBarArrow.frame;
-//		frame.origin.x = [self horizontalLocationFor:_tabBarController.selectedIndex];
-//		_tabBarArrow.frame = frame;
-//	}];
-	if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
-        [[SoundManager sharedManager] playSound:@"Sound/sfx_ui_success.aif"];
-    }
-}
-
-//#pragma mark - Animated Tab Bar
-//
-//- (CGFloat)horizontalLocationFor:(NSUInteger)tabIndex {
-//	// A single tab item's width is the entire width of the tab bar divided by number of items
-//	CGFloat tabItemWidth = _tabBarController.tabBar.frame.size.width / _tabBarController.tabBar.items.count;
-//	// A half width is tabItemWidth divided by 2 minus half the width of the arrow
-//	CGFloat halfTabItemWidth = (tabItemWidth / 2.0) - (_tabBarArrow.frame.size.width / 2.0);
-//	
-//	// The horizontal location is the index times the width plus a half width
-//	return (tabIndex * tabItemWidth) + halfTabItemWidth;
-//}
-//
-//- (void)addTabBarArrow {
-//	UIImage *tabBarArrowImage = [UIImage imageNamed:@"TabBarNipple.png"];
-//	_tabBarArrow = [[UIImageView alloc] initWithImage:tabBarArrowImage];
-//	// To get the vertical location we start at the bottom of the window, go up by height of the tab bar, go up again by the height of arrow and then come back down 2 pixels so the arrow is slightly on top of the tab bar.
-//	CGFloat verticalLocation = [AppDelegate instance].window.frame.size.height - _tabBarController.tabBar.frame.size.height - tabBarArrowImage.size.height + 2;
-//	_tabBarArrow.frame = CGRectMake([self horizontalLocationFor:2], verticalLocation, tabBarArrowImage.size.width, tabBarArrowImage.size.height);
-//	
-//	[[AppDelegate instance].window addSubview:_tabBarArrow];
-//}
-
 #pragma mark - Storyboard
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
 	if ([segue.identifier isEqualToString:@"LoadingCompletedSegue"]) {
-		_tabBarController = (UITabBarController *)segue.destinationViewController;
-		_tabBarController.delegate = self;
-		[[AppDelegate instance] setTabBarVC:_tabBarController];
+		[[AppDelegate instance] setScannerViewController:(ScannerViewController *)segue.destinationViewController];
 
-//		[self addTabBarArrow];
-
-//		for (UINavigationController *navC in _tabBarController.viewControllers) {
-//			navC.topViewController.view.hidden = NO;
-//		}
-
-		[_tabBarController setSelectedIndex:2];
         if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleBackground]) {
             [[SoundManager sharedManager] playMusic:@"Sound/sfx_ambient_scanner_base.aif" looping:YES];
         }

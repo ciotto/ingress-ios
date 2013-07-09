@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "GUIButton.h"
 
-@interface PortalActionsViewController : UIViewController {
+@interface PortalActionsViewController : UIViewController <CLLocationManagerDelegate> {
 	
 //	__weak IBOutlet UIImageView *imageView;
 	__weak IBOutlet UIActivityIndicatorView *imageActivityIndicator;
@@ -24,8 +24,8 @@
 
 }
 
-@property (nonatomic, assign) Portal *portal;
-@property (nonatomic, assign) UIImageView *imageView;
+@property (nonatomic, strong) Portal *portal;
+@property (nonatomic, strong) UIImageView *imageView;
 
 - (void)refresh;
 - (IBAction)hack:(GUIButton *)sender;

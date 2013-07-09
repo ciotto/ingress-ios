@@ -8,8 +8,20 @@
 
 #import <Foundation/Foundation.h>
 
+#pragma mark - Macros
+
+#define NILIFNULL(foo) ((foo == [NSNull null]) ? nil : foo)
+#define NULLIFNIL(foo) ((foo == nil) ? [NSNull null] : foo)
+#define EMPTYIFNIL(foo) ((foo == nil) ? @"" : foo)
+
 #define UIColorFromRGB(rgbValue) [UIColor colorWithRed:((float)((rgbValue & 0xFF0000) >> 16))/255.0 \
 green:((float)((rgbValue & 0xFF00) >> 8))/255.0 blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0]
+
+#ifndef CHAT_FONT_SIZE
+#define CHAT_FONT_SIZE 14
+#endif
+
+#pragma mark - Enums
 
 typedef enum {
 	ItemRarityVeryCommon,
@@ -18,7 +30,7 @@ typedef enum {
 	ItemRarityRare,
 	ItemRarityVeryRare,
 	ItemRarityExtraRare,
-	ItemRarityUnknown
+	ItemRarityUnknown = -1
 } ItemRarity;
 
 typedef enum {
@@ -31,16 +43,23 @@ typedef enum {
 	ItemTypeHeatsink,
 	ItemTypeLinkAmp,
 	ItemTypeMultihack,
-	ItemTypeTurret
+	ItemTypeTurret,
+	ItemTypeUnknown = -1
 } ItemType;
+
+#pragma mark - Interface
 
 @interface Utilities : NSObject
 
-+ (instancetype)sharedInstance;
-
++ (BOOL)isPad;
 + (BOOL)isOS7;
++ (CGFloat)statusBarHeight;
+
++ (double)randomWithMin:(double)min max:(double)max;
 
 + (void)showWarningWithTitle:(NSString *)title;
+
++ (CLLocationDirection)angleFromCoordinate:(CLLocationCoordinate2D)first toCoordinate:(CLLocationCoordinate2D)second;
 
 + (NSDictionary *)attributesWithShadow:(BOOL)shadow size:(CGFloat)size color:(UIColor *)color;
 
@@ -48,6 +67,8 @@ typedef enum {
 + (NSString *)rarityStringFromRarity:(ItemRarity)rarity;
 + (ItemRarity)rarityFromString:(NSString *)rarityStr;
 + (ItemRarity)rarityFromInt:(int)rarityInt;
+
++ (ItemType)itemTypeFromModInt:(int)modInt;
 
 + (int)levelForAp:(int)ap;
 + (int)maxApForLevel:(int)level;

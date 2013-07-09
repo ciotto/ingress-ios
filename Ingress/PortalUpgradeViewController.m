@@ -93,12 +93,6 @@
 			[button setImage:nil forState:UIControlStateNormal];
 		}
 
-		if (self.portal.controllingTeam && ([self.portal.controllingTeam isEqualToString:player.team] || [self.portal.controllingTeam isEqualToString:@"NEUTRAL"])) {
-			[button setEnabled:YES];
-		} else {
-			[button setEnabled:NO];
-		}
-
 	}
 
 	NSMutableArray *tmpResonators = [NSMutableArray arrayWithCapacity:8];
@@ -140,15 +134,15 @@
     
     if (!view) {
         
-		view = [[GlowingLabel alloc] initWithFrame:CGRectMake(0, 0, 220, 220)];
+		view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 220, 220)];
 //        view.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:.95];
 		view.backgroundColor = [UIColor colorWithRed:16.0/255.0 green:32.0/255.0 blue:34.0/255.0 alpha:0.95];
 
-        label = [[GlowingLabel alloc] initWithFrame:CGRectMake(0, 0, 220, 112)];
+        label = [[GlowingLabel alloc] initWithFrame:CGRectMake(20, 0, 180, 112)];
         label.backgroundColor = [UIColor clearColor];
         label.textColor = [UIColor whiteColor];
-        label.textAlignment = NSTextAlignmentCenter;
-        label.font = [label.font fontWithSize:20];
+//        label.textAlignment = NSTextAlignmentCenter;
+		label.font = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:18];
 		label.minimumScaleFactor = .75;
 		label.adjustsFontSizeToFitWidth = YES;
 		label.numberOfLines = 0;
@@ -156,11 +150,13 @@
         [view addSubview:label];
         
 		deployButton = [[GUIButton alloc] initWithFrame:CGRectMake(20, 112, 180, 44)];
+		deployButton.titleLabel.font = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:20];
 		[deployButton addTarget:self action:@selector(resonatorButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
         deployButton.tag = 2;
         [view addSubview:deployButton];
 
 		rechargeButton = [[GUIButton alloc] initWithFrame:CGRectMake(20, 166, 180, 44)];
+		rechargeButton.titleLabel.font = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:20];
 		[rechargeButton setTitle:@"RECHARGE" forState:UIControlStateNormal];
 		[rechargeButton addTarget:self action:@selector(rechargeButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
         rechargeButton.tag = 3;
@@ -179,14 +175,25 @@
 	if (![resonator isKindOfClass:[NSNull class]]) {
 
 		NSMutableString *resonatorString = [NSMutableString string];
+		[resonatorString appendFormat:@"Level: L%d\n", resonator.level];
+		[resonatorString appendFormat:@"XM: %.1fk/%.1fk\n", resonator.energy/1000., [Utilities maxEnergyForResonatorLevel:resonator.level]/1000.];
 		[resonatorString appendFormat:@"Octant: %@\n", resonatorOctant];
-		[resonatorString appendFormat:@"Level: %d\n", resonator.level];
-		[resonatorString appendFormat:@"%d / %d XM\n", resonator.energy, [Utilities maxEnergyForResonatorLevel:resonator.level]];
 
 		NSString *nickname = resonator.owner.nickname;
 		if (nickname) { [resonatorString appendFormat:@"Owner: %@", nickname]; }
 
-		[label setText:resonatorString];
+		NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:resonatorString];
+
+		[attrString setAttributes:[Utilities attributesWithShadow:YES size:16 color:[UIColor whiteColor]] range:NSMakeRange(0, resonatorString.length)];
+
+		[attrString setAttributes:[Utilities attributesWithShadow:YES size:16 color:[Utilities colorForLevel:resonator.level]] range:NSMakeRange(7, 2)];
+
+		if (nickname) {
+			[attrString setAttributes:[Utilities attributesWithShadow:YES size:16
+																color:[Utilities colorForFaction:self.portal.controllingTeam]] range:NSMakeRange(resonatorString.length-nickname.length, nickname.length)];
+		}
+
+		[label setAttributedText:attrString];
 
 		[deployButton setTitle:@"UPGRADE" forState:UIControlStateNormal];
 
@@ -269,30 +276,39 @@
 			[[AppDelegate instance].window addSubview:HUD];
 			[HUD show:YES];
 
-			[[API sharedInstance] deployResonator:resonatorItem toPortal:self.portal toSlot:slot completionHandler:^(NSString *errorStr) {
-
+			@try {
+				[[API sharedInstance] deployResonator:resonatorItem toPortal:self.portal toSlot:slot completionHandler:^(NSString *errorStr) {
+					
+					[HUD hide:YES];
+					
+					if (errorStr) {
+						[Utilities showWarningWithTitle:errorStr];
+					} else {
+						
+						dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^(void){
+							[self refresh];
+						});
+						if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
+							[[SoundManager sharedManager] playSound:@"Sound/sfx_resonator_power_up.aif"];
+						}
+						if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleSpeech]) {
+							[[API sharedInstance] playSounds:@[@"SPEECH_RESONATOR", @"SPEECH_DEPLOYED"]];
+							if ([self.portal.resonators count] == 1) {
+								[[API sharedInstance] playSounds:@[@"SPEECH_PORTAL", @"SPEECH_ONLINE", @"SPEECH_GOOD_WORK"]];
+							}
+						}
+					}
+					
+				}];
+			} @catch (NSException *exception) {
 				[HUD hide:YES];
-
-				if (errorStr) {
-					[Utilities showWarningWithTitle:errorStr];
-				} else {
-
-					dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^(void){
-						[self refresh];
-					});
-                    if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
-                        [[SoundManager sharedManager] playSound:@"Sound/sfx_resonator_power_up.aif"];
-                    }
-                    if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleSpeech]) {
-                        [[API sharedInstance] playSounds:@[@"SPEECH_RESONATOR", @"SPEECH_DEPLOYED"]];
-                        if ([self.portal.resonators count] == 1) {
-                            [[API sharedInstance] playSounds:@[@"SPEECH_PORTAL", @"SPEECH_ONLINE", @"SPEECH_GOOD_WORK"]];
-                        }
-                    }
-				}
-
-			}];
-
+				
+				[Utilities showWarningWithTitle:@"Application error"];
+				[[[GAI sharedInstance] defaultTracker] sendException:NO withDescription:@"%@: %@", @"deployResonatorOfLevel", [exception reason]];
+#if DEBUG
+				NSLog(@"%@", [NSString stringWithFormat:@"Error %@: %@\n%@", @"deployResonatorOfLevel", [exception reason], [exception callStackSymbols]]);
+#endif
+			}
 		}
 
 	} else {
@@ -344,7 +360,7 @@
 
 - (IBAction)rechargeButtonPressed:(GUIButton *)sender {
 
-	__block MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+	MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
 	HUD.userInteractionEnabled = YES;
 	HUD.mode = MBProgressHUDModeIndeterminate;
 	HUD.dimBackground = YES;
@@ -379,11 +395,82 @@
 	
 }
 
-#pragma mark - Shields
+#pragma mark - Mods
 
-- (IBAction)shieldButtonPressed:(GUIButton *)sender {
+- (IBAction)modButtonPressed:(GUIButton *)sender {
 
 	if (sender.disabled) { return; }
+
+	int slot = sender.tag-100;
+
+	DeployedMod *mod = [DeployedMod MR_findFirstWithPredicate:[NSPredicate predicateWithFormat:@"portal = %@ && slot = %d", self.portal, slot]];
+
+	if (mod) {
+		
+		Player *player = [[API sharedInstance] playerForContext:[NSManagedObjectContext MR_contextForCurrentThread]];
+
+		MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+		HUD.userInteractionEnabled = YES;
+		HUD.removeFromSuperViewOnHide = YES;
+		HUD.mode = MBProgressHUDModeCustomView;
+		HUD.dimBackground = YES;
+		HUD.showCloseButton = YES;
+
+		UIView *view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 180, 156)];
+
+        GlowingLabel *label = [[GlowingLabel alloc] initWithFrame:CGRectMake(0, 0, 180, 112)];
+        label.backgroundColor = [UIColor clearColor];
+        label.textColor = [UIColor whiteColor];
+		label.textAlignment = NSTextAlignmentCenter;
+		label.font = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:18];
+		label.minimumScaleFactor = .75;
+		label.adjustsFontSizeToFitWidth = YES;
+		label.numberOfLines = 0;
+        [view addSubview:label];
+
+		GUIButton *removeButton = [[GUIButton alloc] initWithFrame:CGRectMake(0, 112, 180, 44)];
+		removeButton.titleLabel.font = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:20];
+		[removeButton setTitle:@"Remove Mod" forState:UIControlStateNormal];
+		if ([mod.owner.guid isEqualToString:player.guid]) {
+            [removeButton handleControlEvent:UIControlEventTouchUpInside withBlock:^{
+                [HUD hide:YES];
+                [self removeModButtonPressed:removeButton];
+            }];
+		} else {
+			[removeButton setEnabled:NO];
+			[removeButton setErrorString:@"Not Owner"];
+		}
+        removeButton.tag = 100+slot;
+        [view addSubview:removeButton];
+
+		if ([mod isKindOfClass:[DeployedShield class]]) {
+			DeployedShield *shield = (DeployedShield *)mod;
+			label.text = [NSString stringWithFormat:@"%@ Shield\nMitigation +%d", shield.rarityStr, shield.mitigation];
+		} else if ([mod isKindOfClass:[DeployedLinkAmp class]]) {
+//			DeployedLinkAmp *linkAmp = (DeployedLinkAmp *)mod;
+			label.text = [NSString stringWithFormat:@"%@ Link Amp", mod.rarityStr];
+		} else if ([mod isKindOfClass:[DeployedForceAmp class]]) {
+//			DeployedForceAmp *forceAmp = (DeployedForceAmp *)mod;
+			label.text = [NSString stringWithFormat:@"%@ Force Amp", mod.rarityStr];
+		} else if ([mod isKindOfClass:[DeployedHeatsink class]]) {
+//			DeployedHeatsink *heatsink = (DeployedHeatsink *)mod;
+			label.text = [NSString stringWithFormat:@"%@ Heat sink", mod.rarityStr];
+		} else if ([mod isKindOfClass:[DeployedMultihack class]]) {
+//			DeployedMultihack *multihack = (DeployedMultihack *)mod;
+			label.text = [NSString stringWithFormat:@"%@ Multi-hack", mod.rarityStr];
+		} else if ([mod isKindOfClass:[DeployedTurret class]]) {
+//			DeployedTurret *turret = (DeployedTurret *)mod;
+			label.text = [NSString stringWithFormat:@"%@ Turret", mod.rarityStr];
+		} else {
+			label.text = [NSString stringWithFormat:@"%@ Unknown Mod", mod.rarityStr];
+		}
+
+		HUD.customView = view;
+		[[AppDelegate instance].window addSubview:HUD];
+		[HUD show:YES];
+
+		return;
+	}
 
 	MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
 	HUD.userInteractionEnabled = YES;
@@ -391,42 +478,84 @@
 	HUD.mode = MBProgressHUDModeCustomView;
 	HUD.dimBackground = YES;
 	HUD.showCloseButton = YES;
-
-	_levelChooser = [ChooserViewController rarityChooserWithTitle:@"Choose shield rarity" completionHandler:^(ItemRarity rarity) {
+	
+	_modChooser = [ChooserViewController modChooserWithTitle:@"Choose Mod" completionHandler:^(ItemType modType) {
 		[HUD hide:YES];
-		[self deployShieldOfRarity:rarity toSlot:sender.tag-100];
-		_levelChooser = nil;
-	}];
-	HUD.customView = _levelChooser.view;
+		_modChooser = nil;
 
+		__block MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+		HUD.userInteractionEnabled = YES;
+		HUD.removeFromSuperViewOnHide = NO;
+		HUD.mode = MBProgressHUDModeCustomView;
+		HUD.dimBackground = YES;
+		HUD.showCloseButton = YES;
+		_levelChooser = [ChooserViewController rarityChooserWithTitle:@"Choose shield rarity" completionHandler:^(ItemRarity rarity) {
+			[HUD hide:YES];
+			[HUD removeFromSuperview];
+			HUD = nil;
+			_levelChooser = nil;
+			[self deployMod:modType ofRarity:rarity toSlot:slot];
+		}];
+		HUD.customView = _levelChooser.view;
+		[[AppDelegate instance].window addSubview:HUD];
+		[HUD show:YES];
+		
+	}];
+	HUD.customView = _modChooser.view;
 	[[AppDelegate instance].window addSubview:HUD];
 	[HUD show:YES];
 
 }
 
-- (void)deployShieldOfRarity:(ItemRarity)rarity toSlot:(int)slot {
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
-        [[SoundManager sharedManager] playSound:@"Sound/sfx_mod_power_up.aif"];
-    }
-    
-	Shield *shieldItem = [Shield MR_findFirstWithPredicate:[NSPredicate predicateWithFormat:@"dropped = NO && rarity = %d", rarity]];
+- (void)deployMod:(ItemType)modType ofRarity:(ItemRarity)rarity toSlot:(int)slot {
 
-	if (!shieldItem) {
-		[Utilities showWarningWithTitle:@"No shield of that rarity remaining!"];
+	Class objectClass = [NSManagedObject class];
+	switch (modType) {
+		case ItemTypePortalShield:
+			objectClass = [Shield class];
+			break;
+		case ItemTypeForceAmp:
+			objectClass = [ForceAmp class];
+			break;
+		case ItemTypeHeatsink:
+			objectClass = [Heatsink class];
+			break;
+		case ItemTypeLinkAmp:
+			objectClass = [LinkAmp class];
+			break;
+		case ItemTypeMultihack:
+			objectClass = [Multihack class];
+			break;
+		case ItemTypeTurret:
+			objectClass = [Turret class];
+			break;
+		default:
+			objectClass = [Mod class];
+			break;
+	}
+
+	Mod *modItem = [objectClass MR_findFirstWithPredicate:[NSPredicate predicateWithFormat:@"dropped = NO && rarity = %d", rarity]];
+
+	if (!modItem) {
+		[Utilities showWarningWithTitle:@"No mod of that rarity remaining!"];
 	} else {
 
-		[[[GAI sharedInstance] defaultTracker] sendEventWithCategory:@"Game Action" withAction:@"Deploy Shield" withLabel:self.portal.name withValue:@(shieldItem.rarity)];
+		[[[GAI sharedInstance] defaultTracker] sendEventWithCategory:@"Game Action" withAction:@"Deploy Mod" withLabel:self.portal.name withValue:@(modItem.rarity)];
+
+		if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleEffects]) {
+			[[SoundManager sharedManager] playSound:@"Sound/sfx_mod_power_up.aif"];
+		}
 
 		MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
 		HUD.userInteractionEnabled = YES;
 		HUD.dimBackground = YES;
 		HUD.removeFromSuperViewOnHide = YES;
 		HUD.detailsLabelFont = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:16];
-		HUD.detailsLabelText = @"Deploying shield...";
+		HUD.detailsLabelText = @"Deploying Mod...";
 		[[AppDelegate instance].window addSubview:HUD];
 		[HUD show:YES];
 
-		[[API sharedInstance] addMod:shieldItem toItem:self.portal toSlot:slot completionHandler:^(NSString *errorStr) {
+		[[API sharedInstance] addMod:modItem toItem:self.portal toSlot:slot completionHandler:^(NSString *errorStr) {
 
 			[HUD hide:YES];
 
@@ -436,7 +565,34 @@
 
 				[self refresh];
                 if ([[NSUserDefaults standardUserDefaults] boolForKey:DeviceSoundToggleSpeech]) {
-                    [[API sharedInstance] playSounds:@[@"SPEECH_SHIELD", @"SPEECH_DEPLOYED"]];
+
+					NSMutableArray *sounds = [NSMutableArray arrayWithCapacity:2];
+					switch (modType) {
+						case ItemTypePortalShield:
+							[sounds addObject:@"SPEECH_SHIELD"];
+							break;
+						case ItemTypeForceAmp:
+							[sounds addObject:@"SPEECH_FORCE_AMP"];
+							break;
+						case ItemTypeHeatsink:
+							[sounds addObject:@"SPEECH_HEAT_SINK"];
+							break;
+						case ItemTypeLinkAmp:
+							[sounds addObject:@"SPEECH_LINKAMP"];
+							break;
+						case ItemTypeMultihack:
+							[sounds addObject:@"SPEECH_MULTI_HACK"];
+							break;
+						case ItemTypeTurret:
+							[sounds addObject:@"SPEECH_TURRET"];
+							break;
+						default:
+							[sounds addObject:@"SPEECH_UNKNOWN_TECH"];
+							break;
+					}
+					[sounds addObject:@"SPEECH_DEPLOYED"];
+					[[API sharedInstance] playSounds:sounds];
+
                 }
 			}
 			
@@ -444,6 +600,31 @@
 		
 	}
 	
+}
+
+- (IBAction)removeModButtonPressed:(GUIButton *)sender {
+
+	MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+	HUD.userInteractionEnabled = YES;
+	HUD.dimBackground = YES;
+	HUD.removeFromSuperViewOnHide = YES;
+	HUD.detailsLabelFont = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:16];
+	HUD.detailsLabelText = @"Removing Mod...";
+	[[AppDelegate instance].window addSubview:HUD];
+	[HUD show:YES];
+
+	[[API sharedInstance] removeModFromItem:self.portal atSlot:sender.tag-100 completionHandler:^(NSString *errorStr) {
+
+		[HUD hide:YES];
+
+		if (errorStr) {
+			[Utilities showWarningWithTitle:errorStr];
+		}
+        
+        [self refresh];
+
+	}];
+
 }
 
 @end

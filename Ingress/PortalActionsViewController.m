@@ -10,8 +10,11 @@
 #import <SDWebImage/UIImageView+WebCache.h>
 #import "PortalKeysViewController.h"
 #import "NSShadow+Initilalizer.h"
+#import "LocationManager.h"
 
-@implementation PortalActionsViewController
+@implementation PortalActionsViewController {
+	PortalKey *_portalKey;
+}
 
 @synthesize portal = _portal;
 
@@ -28,11 +31,13 @@
 	linkButton.titleLabel.font = [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:16];
 
 	self.imageView.image = [UIImage imageNamed:@"missing_image"];
-
+    
 }
 
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
+	
+	[[LocationManager sharedInstance] addDelegate:self];
 	
 //	[[NSNotificationCenter defaultCenter] addObserverForName:@"PortalChanged" object:nil queue:[API sharedInstance].notificationQueue usingBlock:^(NSNotification *note) {
 //		Portal *newPortal = note.userInfo[@"portal"];
@@ -40,18 +45,26 @@
 //			self.portal = note.userInfo[@"portal"];
 //		}
 //	}];
-	
 }
 
 - (void)viewDidDisappear:(BOOL)animated {
 	[super viewDidDisappear:animated];
 	
+	[[LocationManager sharedInstance] removeDelegate:self];
 	[[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)setPortal:(Portal *)portal {
 	_portal = portal;
-	
+
+	NSArray *fetchedKeys = [PortalKey MR_findAllWithPredicate:[NSPredicate predicateWithFormat:@"dropped = NO"]];
+	for (PortalKey *portalKey in fetchedKeys) {
+		if ([self.portal.guid isEqualToString:portalKey.portal.guid]) {
+			_portalKey = portalKey;
+			break;
+		}
+	}
+
 	dispatch_async(dispatch_get_main_queue(), ^{
 		[self refresh];
 	});
@@ -89,54 +102,91 @@
 
 	NSMutableAttributedString *attrStr = [[NSMutableAttributedString alloc] initWithString:str];
 
-	NSShadow *shadow = [NSShadow shadowWithOffset:CGSizeZero blurRadius:15/5 color:[UIColor colorWithRed:.56 green:1 blue:1 alpha:1]];
-	[attrStr setAttributes:@{NSFontAttributeName: [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:15], NSForegroundColorAttributeName : [UIColor colorWithRed:.56 green:1 blue:1 alpha:1], NSShadowAttributeName: shadow} range:NSMakeRange(0, str.length)];
-
-	shadow = [NSShadow shadowWithOffset:CGSizeZero blurRadius:15/5 color:[Utilities colorForLevel:self.portal.level]];
-	[attrStr setAttributes:@{NSFontAttributeName: [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:15], NSForegroundColorAttributeName : [Utilities colorForLevel:self.portal.level], NSShadowAttributeName: shadow} range:NSMakeRange(7, 2)];
-
-	shadow = [NSShadow shadowWithOffset:CGSizeZero blurRadius:15/5 color:[Utilities colorForFaction:self.portal.controllingTeam]];
-	[attrStr setAttributes:@{NSFontAttributeName: [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:15], NSForegroundColorAttributeName : [Utilities colorForFaction:self.portal.controllingTeam], NSShadowAttributeName: shadow} range:NSMakeRange(str.length-(nickname.length), nickname.length)];
+	[attrStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[UIColor colorWithRed:.56 green:1 blue:1 alpha:1]] range:NSMakeRange(0, str.length)];
+	[attrStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[Utilities colorForLevel:self.portal.level]] range:NSMakeRange(7, 2)];
+	[attrStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[Utilities colorForFaction:self.portal.controllingTeam]] range:NSMakeRange(str.length-(nickname.length), nickname.length)];
 
 	infoLabel1.attributedText = attrStr;
 
 	////////////////////////////
 
-    if (![[NSUserDefaults standardUserDefaults] boolForKey:MilesOrKM]) {
-        infoLabel2.text = [NSString stringWithFormat:@"Energy: %.1fk\nRange: %.1fmi", self.portal.energy/1000., (self.portal.range/1000.) * 0.62137];
-    }
-    else
-    {
-    	infoLabel2.text = [NSString stringWithFormat:@"Energy: %.1fk\nRange: %.1fkm", self.portal.energy/1000., self.portal.range/1000.];
-    }
-	
-//	attrStr = [[NSMutableAttributedString alloc] initWithString:str];
-//	[attrStr setAttributes:@{NSFontAttributeName: [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:15], NSForegroundColorAttributeName : [UIColor colorWithRed:.56 green:1 blue:1 alpha:1]} range:NSMakeRange(0, str.length)];
-//	//[attrStr setAttributes:@{NSFontAttributeName: [UIFont fontWithName:[[[UILabel appearance] font] fontName] size:16], NSForegroundColorAttributeName : [API colorForFaction:self.portal.controllingTeam]} range:NSMakeRange(part1len+7, attrStr.length-(7+part1len))];
-//	infoLabel2.attributedText = attrStr;
-	
+	float milesModifier;
+	NSString *unitLabel;
+	if ([[NSUserDefaults standardUserDefaults] boolForKey:MilesOrKM]) {
+		milesModifier = 1;
+		unitLabel = @"km";
+	} else {
+		milesModifier = 0.621371192;
+		unitLabel = @"mi";
+	}
+
+	NSString *str2 = [NSString stringWithFormat:@"Energy: %.1fk\nRange: %.1f%@", self.portal.energy/1000., (self.portal.range/1000.) * milesModifier, unitLabel];
+	attrStr = [[NSMutableAttributedString alloc] initWithString:str2];
+	[attrStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[UIColor colorWithRed:.56 green:1 blue:1 alpha:1]] range:NSMakeRange(0, str2.length)];
+	infoLabel2.attributedText = attrStr;
+
 	////////////////////////////
 
-	Player *player = [[API sharedInstance] playerForContext:[NSManagedObjectContext MR_contextForCurrentThread]];
-	
-	if (self.portal.controllingTeam && [self.portal.controllingTeam isEqualToString:player.team]) {
-		rechargeButton.enabled = YES;
-		linkButton.enabled = YES;
-		rechargeButton.errorString = nil;
-		linkButton.errorString = nil;
-	} else {
-		rechargeButton.enabled = NO;
-		linkButton.enabled = NO;
+	[self refreshActions];
+}
 
-		if ([self.portal.controllingTeam isEqualToString:@"NEUTRAL"]) {
-			rechargeButton.errorString = @"Neutral Portal";
-			linkButton.errorString = @"Neutral Portal";
+- (void)refreshActions {
+
+    Player *player = [[API sharedInstance] playerForContext:[NSManagedObjectContext MR_contextForCurrentThread]];
+
+    // ------------------------------------------
+    
+    if (self.portal.isInPlayerRange) {
+        hackButton.enabled = YES;
+        hackButton.errorString = nil;
+        
+        if (self.portal.controllingTeam && [self.portal.controllingTeam isEqualToString:player.team]) {
+            
+            linkButton.enabled = YES;
+            linkButton.errorString = nil;
+            
+        } else {
+            linkButton.enabled = NO;
+            
+            if ([self.portal.controllingTeam isEqualToString:@"NEUTRAL"]) {
+                linkButton.errorString = @"Neutral Portal";
+            } else {
+                linkButton.errorString = @"Enemy Portal";
+            }
+        }
+        
+    } else {
+        hackButton.enabled = NO;
+        hackButton.errorString = @"Out of Range";
+        linkButton.enabled = NO;
+        linkButton.errorString = @"Out of Range";
+    }
+    
+    if ((self.portal.controllingTeam && [self.portal.controllingTeam isEqualToString:player.team]) && (self.portal.isInPlayerRange || _portalKey)) {
+        rechargeButton.enabled = YES;
+        rechargeButton.errorString = nil;
+		
+		if (self.portal.isInPlayerRange) {
+			[rechargeButton setTitle:@"RECHARGE" forState:UIControlStateNormal];
 		} else {
-			rechargeButton.errorString = @"Enemy Portal";
-			linkButton.errorString = @"Enemy Portal";
+			[rechargeButton setTitle:@"REMOTE RECHARGE" forState:UIControlStateNormal];
 		}
-	}
-	
+		
+    } else {
+        rechargeButton.enabled = NO;
+        
+        if (self.portal.isInPlayerRange) {
+            if ([self.portal.controllingTeam isEqualToString:@"NEUTRAL"]) {
+                rechargeButton.errorString = @"Neutral Portal";
+            } else {
+                rechargeButton.errorString = @"Enemy Portal";
+            }
+        } else {
+            rechargeButton.errorString = @"Out of Range";
+        }
+
+    }
+
 }
 
 #pragma mark - Actions
@@ -145,9 +195,16 @@
 	
 	if (sender.disabled) { return; }
 
+	int numItems = [Item MR_countOfEntitiesWithPredicate:[NSPredicate predicateWithFormat:@"dropped = NO"]];
+	if (numItems >= 2000) {
+		[Utilities showWarningWithTitle:@"Too many items in Inventory. Your Inventory can have no more than 2000 items."];
+		return;
+	}
+
 	[[[GAI sharedInstance] defaultTracker] sendEventWithCategory:@"Game Action" withAction:@"Portal Hack" withLabel:self.portal.name withValue:@(0)];
 
-	__block MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+	MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+	HUD.removeFromSuperViewOnHide = YES;
 	HUD.userInteractionEnabled = YES;
 	HUD.mode = MBProgressHUDModeIndeterminate;
 	HUD.dimBackground = YES;
@@ -299,8 +356,18 @@
 					if ([acquiredItem hasPrefix:@"L"]) {
 						int level = [[acquiredItem substringWithRange:NSMakeRange(1, 1)] intValue];
 						[acquiredItemStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[Utilities colorForLevel:level]] range:NSMakeRange(0, 2)];
+					} else if ([acquiredItem hasPrefix:@"Very Common"]) {
+						[acquiredItemStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[Utilities colorForRarity:ItemRarityVeryCommon]] range:NSMakeRange(0, acquiredItem.length)];
 					} else if ([acquiredItem hasPrefix:@"Common"]) {
-						//[acquiredItemStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[API colorForLevel:level]] range:NSMakeRange(0, 2)];
+						[acquiredItemStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[Utilities colorForRarity:ItemRarityCommon]] range:NSMakeRange(0, acquiredItem.length)];
+					} else if ([acquiredItem hasPrefix:@"Less Common"]) {
+						[acquiredItemStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[Utilities colorForRarity:ItemRarityLessCommon]] range:NSMakeRange(0, acquiredItem.length)];
+					} else if ([acquiredItem hasPrefix:@"Rare"]) {
+						[acquiredItemStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[Utilities colorForRarity:ItemRarityRare]] range:NSMakeRange(0, acquiredItem.length)];
+					} else if ([acquiredItem hasPrefix:@"Very Rare"]) {
+						[acquiredItemStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[Utilities colorForRarity:ItemRarityVeryRare]] range:NSMakeRange(0, acquiredItem.length)];
+					} else if ([acquiredItem hasPrefix:@"Extra Rare"]) {
+						[acquiredItemStr setAttributes:[Utilities attributesWithShadow:YES size:15 color:[Utilities colorForRarity:ItemRarityExtraRare]] range:NSMakeRange(0, acquiredItem.length)];
 					}
 
 					[acquiredItemsStr appendAttributedString:acquiredItemStr];
@@ -314,7 +381,8 @@
 
 				}
 
-				HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+				MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+				HUD.removeFromSuperViewOnHide = YES;
 				HUD.userInteractionEnabled = YES;
 				HUD.dimBackground = YES;
 				HUD.mode = MBProgressHUDModeText;
@@ -324,10 +392,12 @@
 				HUD.showCloseButton = YES;
 				[[AppDelegate instance].window addSubview:HUD];
 				[HUD show:YES];
+				[HUD hide:YES afterDelay:HUD_DELAY_TIME];
 				
 			} else {
 
-				HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+				MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+				HUD.removeFromSuperViewOnHide = YES;
 				HUD.userInteractionEnabled = YES;
 				HUD.dimBackground = YES;
 				HUD.mode = MBProgressHUDModeText;
@@ -355,7 +425,8 @@
 
 	[[[GAI sharedInstance] defaultTracker] sendEventWithCategory:@"Game Action" withAction:@"Portal Recharge" withLabel:self.portal.name withValue:@(0)];
 	
-	__block MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+	MBProgressHUD *HUD = [[MBProgressHUD alloc] initWithView:[AppDelegate instance].window];
+	HUD.removeFromSuperViewOnHide = YES;
 	HUD.userInteractionEnabled = YES;
 	HUD.mode = MBProgressHUDModeIndeterminate;
 	HUD.dimBackground = YES;
@@ -364,10 +435,10 @@
 	[[AppDelegate instance].window addSubview:HUD];
 	[HUD show:YES];
 	
-	[[API sharedInstance] rechargePortal:self.portal slots:@[@0, @1, @2, @3, @4, @5, @6, @7] completionHandler:^(NSString *errorStr) {
+	void (^handler)(NSString *) = ^(NSString *errorStr) {
 		
 		[HUD hide:YES];
-
+		
 		if (errorStr) {
 			[Utilities showWarningWithTitle:errorStr];
 		} else {
@@ -378,8 +449,14 @@
                 [[API sharedInstance] playSounds:@[@"SPEECH_RESONATOR", @"SPEECH_RECHARGED"]];
             }
 		}
-
-	}];
+		
+	};
+	
+	if (self.portal.isInPlayerRange) {
+		[[API sharedInstance] rechargePortal:self.portal slots:@[@0, @1, @2, @3, @4, @5, @6, @7] completionHandler:handler];
+	} else {
+		[[API sharedInstance] remoteRechargePortal:self.portal portalKey:_portalKey completionHandler:handler];
+	}
 	
 }
 
@@ -392,8 +469,16 @@
 	UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"MainStoryboard_iPhone" bundle:nil];
 	PortalKeysViewController *portalKeysVC = [storyboard instantiateViewControllerWithIdentifier:@"PortalKeysViewController"];
 	portalKeysVC.linkingPortal = self.portal;
-	[self.navigationController pushViewController:portalKeysVC animated:YES]; //.parentViewController
+    [self presentViewController:portalKeysVC animated:YES completion:^{
+    }];
+//	[self.navigationController pushViewController:portalKeysVC animated:YES]; //.parentViewController
 
+}
+
+#pragma mark - CLLocationManagerDelegate protocol
+
+- (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray *)locations {
+	[self refreshActions];
 }
 
 @end

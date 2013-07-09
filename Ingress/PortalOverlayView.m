@@ -14,8 +14,7 @@
 
 - (void)drawMapRect:(MKMapRect)mapRect zoomScale:(MKZoomScale)zoomScale inContext:(CGContextRef)context {
 
-    UITabBarController *tabBarVC = [[AppDelegate instance] tabBarVC];
-    ScannerViewController *scannerVC = (ScannerViewController *)[[(UINavigationController *)([tabBarVC viewControllers][2]) viewControllers] objectAtIndex:0];
+	ScannerViewController *scannerVC = [AppDelegate instance].scannerViewController;
 	Portal *portal = (Portal *)self.overlay;
 
 	if (portal.completeInfo) {

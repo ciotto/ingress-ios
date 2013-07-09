@@ -39,6 +39,9 @@ typedef void (^SoundCompletionBlock)(void);
 
 + (instancetype)sharedInstance;
 
+- (void)incrementNetworkActivityCount;
+- (void)decrementNetworkActivityCount;
+
 + (NSDictionary *)sounds;
 + (float)durationOfSound:(NSString *)soundName;
 + (NSArray *)soundsForNumber:(int)number;
@@ -68,7 +71,8 @@ typedef void (^SoundCompletionBlock)(void);
 - (void)hackPortal:(Portal *)portal completionHandler:(void (^)(NSString *errorStr, NSArray *acquiredItems, int secondsRemaining))handler;
 - (void)deployResonator:(Resonator *)resonatorItem toPortal:(Portal *)portal toSlot:(int)slot completionHandler:(void (^)(NSString *errorStr))handler;
 - (void)upgradeResonator:(Resonator *)resonatorItem toPortal:(Portal *)portal toSlot:(int)slot completionHandler:(void (^)(NSString *errorStr))handler;
-- (void)addMod:(Item *)modItem toItem:(Portal *)modableItem toSlot:(int)slot completionHandler:(void (^)(NSString *errorStr))handler;
+- (void)addMod:(Mod *)modItem toItem:(Portal *)modableItem toSlot:(int)slot completionHandler:(void (^)(NSString *errorStr))handler;
+- (void)removeModFromItem:(Portal *)modableItem atSlot:(int)slot completionHandler:(void (^)(NSString *errorStr))handler;
 - (void)dropItemWithGuid:(NSString *)guid completionHandler:(void (^)(void))handler;
 - (void)pickUpItemWithGuid:(NSString *)guid completionHandler:(void (^)(NSString *errorStr))handler;
 - (void)recycleItem:(Item *)item completionHandler:(void (^)(void))handler;
@@ -80,6 +84,11 @@ typedef void (^SoundCompletionBlock)(void);
 - (void)setNotificationSettingsWithCompletionHandler:(void (^)(void))handler;
 - (void)getModifiedEntity:(Portal *)item completionHandler:(void (^)(void))handler;
 - (void)flipPortal:(Portal *)portal withFlipCard:(FlipCard *)flipCard completionHandler:(void (^)(NSString *errorStr))handler;
+- (void)setPortalDetailsForCurationWithParams:(NSDictionary *)params completionHandler:(void (^)(NSString *errorStr))handler;
+- (void)getUploadUrl:(void (^)(NSString *url))handler;
+- (void)uploadPortalPhotoByUrlWithRequestId:(NSString *)requestId imageUrl:(NSString *)imageUrl completionHandler:(void (^)(NSString *errorStr))handler;
+- (void)uploadPortalImage:(UIImage *)image toURL:(NSString *)url completionHandler:(void (^)(void))handler;
+- (void)findNearbyPortalsWithCompletionHandler:(void (^)(NSArray *portals))handler;
 - (void)cheatSetPlayerLevel;
 
 - (void)sendRequest:(NSString *)requestName params:(id)params completionHandler:(void (^)(id responseObj))handler;
