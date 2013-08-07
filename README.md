@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 iOS Ingress
 ===========
 
@@ -86,3 +87,9 @@ Attribution & License
 ---------------------
 
 This project is in no way associated with Niantic Labs or Google. This project is licensed under the permissive ISC license. Parts imported from other projects remain under their respective licenses.
+=======
+iOS-Ingress
+===========
+
+For download and support, go to [ios-ingress.com](http://ios-ingress.com).
+>>>>>>> upstream/master
