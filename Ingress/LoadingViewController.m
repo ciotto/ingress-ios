@@ -149,12 +149,12 @@
 	////////////////////////////////////////////
 
 	jsonDict = [@{
-				@"nemesisSoftwareVersion": @"2013-07-12T15:48:09Z d6f04b1fab4f opt",
+				@"nemesisSoftwareVersion": @"2014-03-19T21:47:44Z 5df0a209e387 opt",
 				@"deviceSoftwareVersion": NULLIFNIL(device.systemVersion),
 //				@"a": NULLIFNIL(jsonDeviceInfo)
 	} mutableCopy];
 
-	versionString = @"v1.31.1";
+	versionString = @"v1.48.0";
 	
 }
 

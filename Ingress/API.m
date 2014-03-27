@@ -443,12 +443,13 @@ NSString *const BanAlertDisplayed = @"BanAlertDisplayed";
 			return;
 		}
 		
-		if (![jsonObject[@"result"][@"canPlay"] boolValue]) {
-			dispatch_async(dispatch_get_main_queue(), ^{
-				handler(@"You are not able to play");
-			});
-			return;
-		}
+        // This value has been removed in '2014-03-19T21:47:44Z 5df0a209e387 opt' server version
+        //if (![jsonObject[@"result"][@"canPlay"] boolValue]) {
+        //   dispatch_async(dispatch_get_main_queue(), ^{
+        //       handler(@"You are not able to play");
+        //   });
+        //	 return;
+        //}
 		
 		self.xsrfToken = jsonObject[@"result"][@"xsrfToken"];
 		//NSLog(@"xsrfToken: %@", self.xsrfToken);
